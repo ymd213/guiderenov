@@ -1,288 +1,191 @@
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GuideRénov — Assistant travaux</title>
-  <style>
-    :root{--primary:#2563eb;--secondary:#f97316;--dark:#0f172a;--light:#f8fafc;--muted:#64748b;--success:#10b981}
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;background:var(--light);color:var(--dark);-webkit-font-smoothing:antialiased}
-    header{background:linear-gradient(135deg,var(--primary),#1e40af);color:#fff;padding:1rem;position:sticky;top:0;z-index:30}
-    .wrap{max-width:1200px;margin:0 auto;padding:1rem}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-    .logo{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.15rem}
-    .cta{background:var(--secondary);border:none;color:#fff;padding:.6rem .9rem;border-radius:10px;cursor:pointer}
-    main{padding:1rem}
-    .hero{background:#fff;border-radius:12px;padding:1.25rem;margin-top:1rem;box-shadow:0 6px 20px rgba(2,6,23,0.06)}
-    .hero h1{color:var(--primary);font-size:1.4rem;margin-bottom:.5rem}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px,1fr));gap:1rem;margin-top:1rem}
-    .card{background:#fff;padding:1rem;border-radius:10px;box-shadow:0 4px 14px rgba(2,6,23,0.04);cursor:pointer;display:flex;flex-direction:column}
-    .card .meta{font-size:.85rem;color:var(--muted);margin-top:.5rem}
+project/
+│
+├─ frontend/
+│   ├─ components/
+│   │   ├─ SearchBar.js
+│   │   └─ WorkSteps.js
+│   ├─ images/
+│   │   ├─ prep_2D.png
+│   │   ├─ box_2D.png
+│   │   ├─ wiring_2D.png
+│   │   ├─ fix_2D.png
+│   │   └─ test_2D.png
+│   ├─ models/
+│   │   ├─ prep_3D.glb
+│   │   ├─ box_3D.glb
+│   │   ├─ wiring_3D.glb
+│   │   ├─ fix_3D.glb
+│   │   └─ test_3D.glb
+│   └─ App.js
+│
+├─ backend/
+│   ├─ server.js
+│   └─ ai_estimator.js
+│
+├─ database/
+│   └─ works.json
+├─ package.json
+└─ README.md
 
-    .controls{display:flex;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
-    .search{flex:1;min-width:200px}
-    input[type=text],select,input[type=number]{width:100%;padding:.6rem;border-radius:8px;border:1px solid #e6edf3}
-    .categories{display:flex;gap:.5rem;flex-wrap:wrap}
-    .chip{padding:.4rem .6rem;border-radius:999px;background:#fff;border:1px solid #e6edf3;cursor:pointer;font-size:.85rem}
-
-    .projects-grid{margin-top:1rem}
-    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:1rem;z-index:50}
-    .modal.active{display:flex}
-    .panel{background:#fff;border-radius:12px;max-width:980px;width:100%;max-height:92vh;overflow:auto}
-    .panel .head{padding:1rem 1.25rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
-    .panel .body{padding:1rem}
-    .materials{display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-top:.75rem}
-    .steps{margin-top:1rem}
-    .step{background:#fff;border-radius:8px;padding:.8rem;border:1px solid #eef2ff;margin-bottom:.5rem}
-    .uploader{border:2px dashed var(--primary);padding:1rem;border-radius:10px;text-align:center;background:#f0f9ff}
-    .photo-row{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap}
-    .photo-row img{width:110px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #e6f0ff}
-    footer{margin:2rem 0;color:var(--muted);text-align:center}
-    @media (max-width:720px){.top{flex-direction:column;align-items:flex-start}}
-  </style>
-</head>
-<body>
-  <header>
-    <div class="wrap top">
-      <div class="logo">🔨 GuideRénov — Assistant travaux</div>
-      <div>
-        <button class="cta" onclick="scrollTo('#start')">Commencer un projet</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="hero" id="start">
-      <h1>Prends une photo, saisis les cotes. Nous générons la liste matériaux et la notice pas à pas.</h1>
-      <p style="color:var(--muted);margin-top:.5rem">Calculs standards (peinture, parquet, plinthes, étagères, radiateurs...) et guide outillage adapté.</p>
-
-      <div class="controls">
-        <div class="search"><input type="text" id="search" placeholder="Rechercher un projet, ex: peinture mur" oninput="renderProjects()"></div>
-        <div style="min-width:140px"><select id="categoryFilter" onchange="renderProjects()"><option value="all">Toutes catégories</option></select></div>
-        <div style="min-width:160px"><button class="chip" onclick="openNewProject()">Nouveau projet</button></div>
-      </div>
-
-      <div style="margin-top:1rem;color:var(--muted);font-size:.9rem">Projets disponibles : <span id="count">0</span></div>
-    </section>
-
-    <section class="projects-grid" id="projectsGrid"></section>
-  </main>
-
-  <div class="modal" id="modal">
-    <div class="panel" role="dialog" aria-modal="true">
-      <div class="head">
-        <div><strong id="mTitle">Titre</strong><div id="mMeta" style="color:var(--muted);font-size:.85rem"></div></div>
-        <div><button onclick="closeModal()" style="border:none;background:transparent;font-size:1.2rem;cursor:pointer">✕</button></div>
-      </div>
-      <div class="body" id="mBody"></div>
-    </div>
-  </div>
-
-  <footer class="wrap"><small>Prototype — GuideRénov. Données exemples. Hébergement et publication à prévoir.</small></footer>
-
-  <script>
-    // --- Data: 73 projets générés à partir d'une liste d'intitulés ---
-    const rawTitles = [
-      // Menuiserie (10)
-      'Montage meuble IKEA (Billy, Kallax)', 'Montage placard encastré','Pose de parquet flottant','Pose de plinthes','Montage lit/armoire','Installation plan de travail cuisine','Fabrication étagères sur mesure','Pose de porte intérieure','Remplacement charnière porte','Montage dressing modulable',
-      // Peinture (8)
-      'Peinture mur/plafond','Application sous-couche','Peinture boiseries','Peinture radiateur','Pose de toile de verre','Rebouchage et ponçage avant peinture','Peinture façade extérieure','Vernis meuble bois',
-      // Électricité (7)
-      'Installation prise murale','Pose plafonnier','Remplacement interrupteur','Installation détecteur de mouvement','Installation applique murale','Pose variateur d\'intensité','Tirage simple de câble',
-      // Plomberie (8)
-      'Installation lavabo/vasque','Montage robinet/mitigeur','Installation machine à laver','Pose colonne de douche','Remplacement siphon','Pose évacuation lave-vaisselle','Installation ballon d\'eau petit modèle','Changement flexible douche',
-      // Chauffage (6)
-      'Pose radiateur électrique mural','Installation thermostat connecté','Remplacement radiateur','Pose sèche-serviette','Installation grille aération','Montage chaudière (guide pro)',
-      // Sécurité & Serrurerie (6)
-      'Remplacement barillet porte','Pose serrure additionnelle','Installation détecteur fumée','Pose judas porte','Installation sonnette connectée','Pose verrou sécurité fenêtre',
-      // Maçonnerie (6)
-      'Scellement cheville chimique','Rebouchage trou & fissure','Pose carrelage mural petit format','Jointoiement carrelage','Création coffrage léger','Réparation plâtre',
-      // Aménagement (8)
-      'Pose tringle à rideaux','Installation miroir mural','Montage meuble TV','Montage bureau','Installation étagères murales','Pose store enrouleur','Installation porte coulissante','Montage mezzanine légère',
-      // Extérieur (6)
-      'Montage abri jardin','Pose clôture simple','Installation luminaire extérieur','Pose gouttière PVC','Installation récupérateur d\'eau','Aménagement bac à fleurs',
-      // Entretien & Divers (10)
-      'Remplacement joint silicone salle de bain','Entretien robinetterie','Changement poignée fenêtre','Pose joint anti-courant d\'air','Débouchage simple évier','Pose boîte aux lettres','Installation détecteur monoxyde de carbone','Petite soudure métal','Réparation carrosserie abîmée','Mise à niveau sol léger'
-    ];
-
-    // categories mapping for display and filter
-    const categoryMap = {
-      'Menuiserie': ['Montage meuble IKEA (Billy, Kallax)','Montage placard encastré','Pose de parquet flottant','Pose de plinthes','Montage lit/armoire','Installation plan de travail cuisine','Fabrication étagères sur mesure','Pose de porte intérieure','Remplacement charnière porte','Montage dressing modulable'],
-      'Peinture': ['Peinture mur/plafond','Application sous-couche','Peinture boiseries','Peinture radiateur','Pose de toile de verre','Rebouchage et ponçage avant peinture','Peinture façade extérieure','Vernis meuble bois'],
-      'Électricité': ['Installation prise murale','Pose plafonnier','Remplacement interrupteur','Installation détecteur de mouvement','Installation applique murale','Pose variateur d\'intensité','Tirage simple de câble'],
-      'Plomberie': ['Installation lavabo/vasque','Montage robinet/mitigeur','Installation machine à laver','Pose colonne de douche','Remplacement siphon','Pose évacuation lave-vaisselle','Installation ballon d\'eau petit modèle','Changement flexible douche'],
-      'Chauffage': ['Pose radiateur électrique mural','Installation thermostat connecté','Remplacement radiateur','Pose sèche-serviette','Installation grille aération','Montage chaudière (guide pro)'],
-      'Sécurité': ['Remplacement barillet porte','Pose serrure additionnelle','Installation détecteur fumée','Pose judas porte','Installation sonnette connectée','Pose verrou sécurité fenêtre'],
-      'Maçonnerie': ['Scellement cheville chimique','Rebouchage trou & fissure','Pose carrelage mural petit format','Jointoiement carrelage','Création coffrage léger','Réparation plâtre'],
-      'Aménagement': ['Pose tringle à rideaux','Installation miroir mural','Montage meuble TV','Montage bureau','Installation étagères murales','Pose store enrouleur','Installation porte coulissante','Montage mezzanine légère'],
-      'Extérieur': ['Montage abri jardin','Pose clôture simple','Installation luminaire extérieur','Pose gouttière PVC','Installation récupérateur d\'eau','Aménagement bac à fleurs'],
-      'Entretien': ['Remplacement joint silicone salle de bain','Entretien robinetterie','Changement poignée fenêtre','Pose joint anti-courant d\'air','Débouchage simple évier','Pose boîte aux lettres','Installation détecteur monoxyde de carbone','Petite soudure métal','Réparation carrosserie abîmée','Mise à niveau sol léger']
-    };
-
-    // Build projects array with standardized structure
-    const projects = rawTitles.map((t,i)=>{
-      // determine category
-      let cat = 'Autre';
-      for(const k of Object.keys(categoryMap)) if(categoryMap[k].includes(t)){cat=k;break}
-      // difficulty heuristic
-      const diff = i%3===0? 'easy' : (i%3===1? 'medium':'hard');
-      // default materials/tools/steps simplified
-      const materials = [{name: 'Main d\'oeuvre / kit de base', quantity: '1', price: 'variable'}];
-      const tools = ['Mètre','Niveau','Perceuse-visseuse'];
-      const steps = [
-        {title:'Prise de mesures', desc:'Mesurez précisément la zone concernée.'},
-        {title:'Préparation', desc:'Dégagez la zone et protégez les surfaces sensibles.'},
-        {title:'Exécution', desc:'Suivez les étapes spécifiques au projet.'},
-        {title:'Finitions', desc:'Nettoyez et vérifiez la qualité du travail.'}
-      ];
-      // custom for quelques types
-      const lower = t.toLowerCase();
-      // paint specific
-      if(lower.includes('peinture')){
-        materials.unshift({name:'Peinture (estimation)', quantity:'variable', price:'€/L'});
-        tools.unshift('Rouleau','Pinceau','Bac à peinture');
-        steps.unshift({title:'Protection', desc:'Protection du sol et des meubles.'});
-      }
-      if(lower.includes('parquet')|| lower.includes('plancher')){
-        materials.unshift({name:'Lames parquet', quantity:'m² +10%', price:'€/m²'});
-        tools.unshift('Scie','Cale de frappe');
-      }
-      if(lower.includes('radiateur')||lower.includes('chauffage')){
-        materials.unshift({name:'Radiateur (référence à vérifier)', quantity:'1', price:'€'});
-        tools.unshift('Clé à molette');
-      }
-      if(lower.includes('étagère')||lower.includes('tringle')){
-        materials.unshift({name:'Étagère / tringle', quantity:'1', price:'€'});
-        tools.unshift('Perceuse','Chevilles');
-      }
-
-      // calcFormula standard templates
-      const calcFormula = (dimensions)=>{
-        // dimensions: {height, width, depth} in cm
-        const h = Number(dimensions.height)||0;
-        const w = Number(dimensions.width)||0;
-        const d = Number(dimensions.depth)||0;
-        const area = Math.round((h/100)*(w/100)*100)/100; // m2
-        let result = {items:[], estimateEuro: 'variable'};
-        if(lower.includes('peinture')){
-          const sqm = area>0? area : 10; // fallback
-          const liters = Math.max(1, Math.ceil((sqm/10))); // 10m2 per L as base
-          const price = liters*15; result.items.push({name:'Peinture (L)', qty:liters, unit:'L'}); result.estimateEuro = price + ' € (est.)';
-          result.notes = `Surface estimée ${sqm} m². Prévoir sous-couche si nécessaire.`;
-        } else if(lower.includes('parquet')){
-          const sqm = area>0? area : 10; const qty = Math.ceil(sqm*1.1); result.items.push({name:'Lames parquet (m²)', qty, unit:'m²'}); result.estimateEuro = Math.round(qty*25) + ' € (est.)';
-        } else if(lower.includes('plinthe')){
-          const perim = h>0 && w>0? 2*((h/100)+(w/100)) : 10; const ml = Math.ceil(perim); result.items.push({name:'Plinthes (ml)', qty:ml, unit:'ml'}); result.estimateEuro = Math.round(ml*8) + ' € (est.)';
-        } else {
-          // generic: list basic kit
-          result.items.push({name:'Kit outils de base', qty:1, unit:'kit'});
-          result.estimateEuro = 'variable';
+------------------------------------------------------------
+# database/works.json
+------------------------------------------------------------
+{
+  "works": [
+    {
+      "name": "Installation prise 4 voies",
+      "description": "Installation complète d'une prise électrique 4 voies",
+      "tools": ["Tournevis", "Pince coupante", "Gaine isolante", "Testeur de tension"],
+      "materials": ["Boîte d'encastrement", "Prise 4 voies", "Câble électrique"],
+      "cost_normal": 25,
+      "cost_with_tools": 70,
+      "steps": [
+        {
+          "title": "Préparation",
+          "description": "Coupez le courant au niveau du disjoncteur principal. Mesurez l'emplacement de la prise et marquez-le sur le mur.",
+          "image": "prep_2D.png",
+          "3D_model": "prep_3D.glb"
+        },
+        {
+          "title": "Installation de la boîte d'encastrement",
+          "description": "Percez le mur et insérez la boîte. Vérifiez qu'elle est bien alignée et stable.",
+          "image": "box_2D.png",
+          "3D_model": "box_3D.glb"
+        },
+        {
+          "title": "Câblage",
+          "description": "Branchez les fils électriques selon le code couleur : bleu neutre, rouge phase, vert/jaune terre. Utilisez le testeur pour vérifier la continuité.",
+          "image": "wiring_2D.png",
+          "3D_model": "wiring_3D.glb"
+        },
+        {
+          "title": "Fixation de la prise",
+          "description": "Fixez la prise dans la boîte avec les vis fournies. Vérifiez que le câblage est correctement positionné et que rien ne touche la structure métallique.",
+          "image": "fix_2D.png",
+          "3D_model": "fix_3D.glb"
+        },
+        {
+          "title": "Test final",
+          "description": "Remettez le courant, testez la prise avec un appareil électrique. Assurez-vous que toutes les prises fonctionnent et qu'aucun fil n'est exposé.",
+          "image": "test_2D.png",
+          "3D_model": "test_3D.glb"
         }
-        return result;
-      };
-
-      return {id:i+1,title:t,category:cat,difficulty:diff,time:'variable',description:'Fiche pas-à-pas pour '+t,materials,tools,steps,calcFormula}
-    });
-
-    // --- UI: populate categories filter ---
-    const categories = ['Toutes catégories',...Object.keys(categoryMap)];
-    const catSelect = document.getElementById('categoryFilter');
-    categories.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.textContent=c; catSelect.appendChild(opt)});
-
-    // render projects
-    function renderProjects(){
-      const q = document.getElementById('search').value.toLowerCase();
-      const cf = document.getElementById('categoryFilter').value;
-      const grid = document.getElementById('projectsGrid'); grid.innerHTML='';
-      const filtered = projects.filter(p=>{
-        if(cf!=='Toutes catégories' && p.category!==cf) return false;
-        if(q && !(p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))) return false;
-        return true;
-      });
-      document.getElementById('count').textContent = filtered.length;
-      filtered.forEach(p=>{
-        const el = document.createElement('div'); el.className='card';
-        el.innerHTML = `<div style="font-weight:700">${escapeHtml(p.title)}</div>
-                        <div class="meta">${p.category} • ${p.difficulty}</div>
-                        <div style="margin-top:.6rem;color:var(--muted);font-size:.95rem">${escapeHtml(p.description)}</div>`;
-        el.onclick = ()=> openProject(p);
-        grid.appendChild(el);
-      });
+      ]
     }
+  ]
+}
 
-    // helpers
-    function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]})}
+------------------------------------------------------------
+# backend/ai_estimator.js
+------------------------------------------------------------
+const works = require('../database/works.json');
 
-    // open project modal with interactive calculator
-    function openProject(p){
-      const m = document.getElementById('modal'); m.classList.add('active');
-      document.getElementById('mTitle').textContent = p.title;
-      document.getElementById('mMeta').textContent = `${p.category} • ${p.difficulty}`;
-      const body = document.getElementById('mBody'); body.innerHTML = '';
+function estimateWork(workName, hasTools = true) {
+  const work = works.works.find(w => w.name.toLowerCase() === workName.toLowerCase());
+  if (!work) return { error: "Travail non trouvé" };
+  const cost = hasTools ? work.cost_normal : work.cost_with_tools;
+  return {
+    name: work.name,
+    description: work.description,
+    tools: work.tools,
+    materials: work.materials,
+    estimated_cost: cost,
+    steps: work.steps
+  };
+}
 
-      // photo uploader
-      const up = document.createElement('div'); up.className='uploader'; up.innerHTML = `<div>📷 Charger une photo (optionnel)</div><input type="file" id="photoInput" accept="image/*"> <div class="photo-row" id="photoRow"></div>`;
-      body.appendChild(up);
-      up.querySelector('#photoInput').addEventListener('change',ev=>{
-        const row = up.querySelector('#photoRow'); row.innerHTML=''; Array.from(ev.target.files).forEach(f=>{ const url = URL.createObjectURL(f); const img = document.createElement('img'); img.src=url; row.appendChild(img)});
-      });
+module.exports = { estimateWork };
 
-      // dimensions form
-      const form = document.createElement('div'); form.style.marginTop='1rem';
-      form.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem">
-        <div><label>Hauteur (cm)</label><input type="number" id="dimH" placeholder="ex: 250"></div>
-        <div><label>Largeur (cm)</label><input type="number" id="dimW" placeholder="ex: 400"></div>
-        <div><label>Profondeur (cm)</label><input type="number" id="dimD" placeholder="ex: 30"></div>
+------------------------------------------------------------
+# backend/server.js
+------------------------------------------------------------
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { estimateWork } = require('./ai_estimator');
+
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+
+app.post('/estimate', (req, res) => {
+  const { workName, hasTools } = req.body;
+  const result = estimateWork(workName, hasTools);
+  res.json(result);
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+
+------------------------------------------------------------
+# frontend/components/SearchBar.js
+------------------------------------------------------------
+import React, { useState } from 'react';
+
+export default function SearchBar({ onSearch }) {
+  const [query, setQuery] = useState('');
+  return (
+    <div>
+      <input 
+        type="text" 
+        placeholder="Cherchez un travail..." 
+        value={query} 
+        onChange={(e) => setQuery(e.target.value)} 
+      />
+      <button onClick={() => onSearch(query)}>Rechercher</button>
+    </div>
+  );
+}
+
+------------------------------------------------------------
+# frontend/components/WorkSteps.js
+------------------------------------------------------------
+import React, { useState } from 'react';
+
+export default function WorkSteps({ work }) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const step = work.steps[currentStep];
+
+  return (
+    <div>
+      <h2>{step.title}</h2>
+      <p>{step.description}</p>
+      <img src={`./images/${step.image}`} alt={step.title} style={{ maxWidth: '400px' }} />
+      <div style={{ width: '400px', height: '300px', background: '#eee', margin: '10px 0' }}>
+        <p style={{ textAlign: 'center', paddingTop: '130px' }}>3D model: {step['3D_model']}</p>
       </div>
-      <div style="margin-top:.6rem"><button class="cta" id="calcBtn">Calculer besoins & prix</button></div>
-      `;
-      body.appendChild(form);
+      <div>
+        {currentStep > 0 && <button onClick={() => setCurrentStep(currentStep-1)}>Précédent</button>}
+        {currentStep < work.steps.length-1 && <button onClick={() => setCurrentStep(currentStep+1)}>Suivant</button>}
+      </div>
+    </div>
+  );
+}
 
-      // materials and steps container
-      const out = document.createElement('div'); out.id='calcOut'; body.appendChild(out);
+------------------------------------------------------------
+# frontend/App.js
+------------------------------------------------------------
+import React, { useState } from 'react';
+import SearchBar from './components/SearchBar';
+import WorkSteps from './components/WorkSteps';
 
-      // tools and steps quick view
-      const tools = document.createElement('div'); tools.style.marginTop='1rem'; tools.innerHTML = `<strong>Outillage recommandé</strong><div style="color:var(--muted);margin-top:.4rem">${p.tools.join(', ')}</div>`;
-      body.appendChild(tools);
+export default function App() {
+  const [work, setWork] = useState(null);
 
-      const steps = document.createElement('div'); steps.className='steps'; steps.innerHTML = `<strong>Étapes</strong>`;
-      p.steps.forEach(s=>{ const el = document.createElement('div'); el.className='step'; el.innerHTML = `<div style="font-weight:700">${escapeHtml(s.title)}</div><div style="color:var(--muted);margin-top:.3rem">${escapeHtml(s.desc)}</div>`; steps.appendChild(el)});
-      body.appendChild(steps);
+  const searchWork = async (workName) => {
+    const res = await fetch('http://localhost:3000/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workName, hasTools: false })
+    });
+    const data = await res.json();
+    setWork(data.error ? null : data);
+  };
 
-      // attach calc
-      form.querySelector('#calcBtn').onclick = ()=>{
-        const h = form.querySelector('#dimH').value; const w = form.querySelector('#dimW').value; const d = form.querySelector('#dimD').value;
-        const res = p.calcFormula({height:h,width:w,depth:d});
-        renderCalc(res, out);
-      }
-    }
-
-    function renderCalc(res, out){
-      out.innerHTML = `<div style="margin-top:1rem;background:linear-gradient(135deg,#f8fafc,#eef6ff);padding:1rem;border-radius:8px"><strong>Liste matériaux estimée</strong>`;
-      const list = document.createElement('div'); list.style.marginTop='.6rem';
-      (res.items||[]).forEach(it=>{ const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='.5rem 0'; row.innerHTML = `<div>${escapeHtml(it.name)}</div><div style="font-weight:700">${it.qty} ${it.unit||''}</div>`; list.appendChild(row)});
-      out.appendChild(list);
-      if(res.estimateEuro) out.innerHTML += `<div style="margin-top:.8rem;font-weight:700;color:var(--success)">${res.estimateEuro}</div>`;
-      if(res.notes) out.innerHTML += `<div style="margin-top:.6rem;color:var(--muted)">${escapeHtml(res.notes)}</div>`;
-      out.innerHTML += `</div>`;
-    }
-
-    function closeModal(){ document.getElementById('modal').classList.remove('active') }
-
-    function openNewProject(){
-      // open a generic project creation modal that uses search to pick template
-      const p = {title:'Nouveau projet',category:'Personnalisé',difficulty:'custom',description:'Créez votre projet'}; openProject(p);
-    }
-
-    function scrollTo(sel){ document.querySelector(sel).scrollIntoView({behavior:'smooth'}) }
-
-    // initial render
-    renderProjects();
-
-    // expose for debugging
-    window.renderProjects = renderProjects; window.openProject = openProject; window.closeModal = closeModal; window.openNewProject = openNewProject;
-
-  </script>
-</body>
-</html>
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1>Application Estimation de Travaux</h1>
+      <SearchBar onSearch={searchWork} />
+      {work && <WorkSteps work={work} />}
+    </div>
+  );
+}
