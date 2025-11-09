@@ -1,333 +1,613 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GuideRénov — Assistant travaux</title>
-  <meta name="description" content="GuideRénov — Prends une photo, saisis les cotes. Liste matériaux et notice pas-à-pas pour 73 projets maison.">
-  <style>
-    :root{--primary:#2563eb;--secondary:#f97316;--dark:#0f172a;--light:#f8fafc;--muted:#64748b;--success:#10b981}
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;background:var(--light);color:var(--dark);-webkit-font-smoothing:antialiased}
-    header{background:linear-gradient(135deg,var(--primary),#1e40af);color:#fff;padding:1rem;position:sticky;top:0;z-index:30}
-    .wrap{max-width:1200px;margin:0 auto;padding:1rem}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-    .logo{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.15rem}
-    .cta{background:var(--secondary);border:none;color:#fff;padding:.6rem .9rem;border-radius:10px;cursor:pointer}
-    main{padding:1rem}
-    .hero{background:#fff;border-radius:12px;padding:1.25rem;margin-top:1rem;box-shadow:0 6px 20px rgba(2,6,23,0.06)}
-    .hero h1{color:var(--primary);font-size:1.4rem;margin-bottom:.5rem}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px,1fr));gap:1rem;margin-top:1rem}
-    .card{background:#fff;padding:1rem;border-radius:10px;box-shadow:0 4px 14px rgba(2,6,23,0.04);cursor:pointer;display:flex;flex-direction:column}
-    .card .meta{font-size:.85rem;color:var(--muted);margin-top:.5rem}
-    .controls{display:flex;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
-    .search{flex:1;min-width:200px}
-    input[type=text],select,input[type=number],textarea{width:100%;padding:.6rem;border-radius:8px;border:1px solid #e6edf3}
-    .categories{display:flex;gap:.5rem;flex-wrap:wrap}
-    .chip{padding:.4rem .6rem;border-radius:999px;background:#fff;border:1px solid #e6edf3;cursor:pointer;font-size:.85rem}
-    .projects-grid{margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
-    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:1rem;z-index:50}
-    .modal.active{display:flex}
-    .panel{background:#fff;border-radius:12px;max-width:980px;width:100%;max-height:92vh;overflow:auto}
-    .panel .head{padding:1rem 1.25rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
-    .panel .body{padding:1rem}
-    .materials{display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-top:.75rem}
-    .steps{margin-top:1rem}
-    .step{background:#fff;border-radius:8px;padding:.8rem;border:1px solid #eef2ff;margin-bottom:.5rem}
-    .uploader{border:2px dashed var(--primary);padding:1rem;border-radius:10px;text-align:center;background:#f0f9ff}
-    .photo-row{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap}
-    .photo-row img{width:110px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #e6f0ff}
-    footer{margin:2rem 0;color:var(--muted);text-align:center}
-    @media (max-width:720px){.top{flex-direction:column;align-items:flex-start}}
-    .badge{display:inline-block;padding:.25rem .6rem;border-radius:999px;background:#eef2ff;color:var(--primary);font-size:.75rem;margin-top:.5rem}
-    .small{font-size:.9rem;color:var(--muted)}
-    .btn{padding:.5rem .8rem;border-radius:8px;border:none;cursor:pointer}
-    .btn-outline{background:#fff;border:1px solid #e6edf3}
-    .btn-primary{background:var(--primary);color:#fff}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GuideRénov — Assistant travaux</title>
+<meta name="description" content="GuideRénov — assistant travaux : projets, notices pas-à-pas, simulateur quantités, assistant IA prototype." />
+<style>
+  :root{
+    --primary:#2563eb;--accent:#f97316;--bg:#f8fafc;--card:#ffffff;--muted:#64748b;--success:#10b981;--danger:#ef4444;
+    --radius:10px;--glass: rgba(255,255,255,0.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial;background:var(--bg);color:#0f172a;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  header{background:linear-gradient(135deg,var(--primary),#1e40af);color:#fff;padding:12px 0;position:sticky;top:0;z-index:40}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .logo{font-weight:700;display:flex;gap:8px;align-items:center}
+  .tabs{display:flex;gap:8px}
+  .tab-btn{background:transparent;border:none;color:inherit;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .tab-btn.active{background:rgba(255,255,255,0.12);box-shadow:0 4px 12px rgba(2,6,23,0.12)}
+  main{padding:20px 0}
+  .hero{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:0 8px 30px rgba(2,6,23,0.06);margin-bottom:16px}
+  .hero h1{color:var(--primary);font-size:20px;margin-bottom:8px}
+  .hero p{color:var(--muted);line-height:1.4}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  input[type=text],select,input[type=number],textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf3;background:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px}
+  .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.04);cursor:pointer;display:flex;flex-direction:column;gap:8px}
+  .muted{color:var(--muted)}
+  .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef4ff;color:var(--primary);font-weight:700;font-size:12px}
+  .projects-grid{margin-top:12px}
+  .panel{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 40px rgba(2,6,23,0.06)}
+  .row{display:flex;gap:12px;align-items:center}
+  .col{flex:1}
+  .small{font-size:13px;color:var(--muted)}
+  .uploader{border:2px dashed var(--primary);padding:12px;border-radius:10px;text-align:center;background:#f0f9ff}
+  .photo-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .photo-row img{width:120px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #e6f0ff}
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.6);z-index:80;padding:12px}
+  .modal.active{display:flex}
+  .modal-card{background:var(--card);border-radius:12px;max-width:980px;width:100%;max-height:92vh;overflow:auto}
+  .modal-head{padding:12px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center}
+  .modal-body{padding:14px}
+  .section{margin-bottom:14px}
+  .list-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #f1f5f9}
+  .step{background:#fff;border-radius:8px;padding:10px;border:1px solid #eef2ff;margin-bottom:8px}
+  .btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-outline{background:#fff;border:1px solid #e6edf3}
+  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+  @media(max-width:760px){.top{flex-direction:column;align-items:flex-start}.row{flex-direction:column;align-items:flex-start}.grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-  <header>
-    <div class="wrap top">
-      <div class="logo">🔨 GuideRénov — Assistant travaux</div>
-      <div>
-        <button class="cta" onclick="scrollToId('start')">Commencer un projet</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="hero" id="start">
-      <h1>Prends une photo, saisis les cotes. Nous générons la liste matériaux et la notice pas-à-pas.</h1>
-      <p class="small" style="margin-top:.5rem">Calculs standards (peinture, parquet, plinthes, étagères, chauffage...). Guide outillage adapté.</p>
-
-      <div class="controls">
-        <div class="search"><input type="text" id="search" placeholder="Rechercher un projet, ex: peinture mur" oninput="renderProjects()"></div>
-        <div style="min-width:180px"><select id="categoryFilter" onchange="renderProjects()"><option value="Toutes catégories">Toutes catégories</option></select></div>
-        <div style="min-width:140px"><button class="chip" onclick="openNewProject()">Nouveau projet</button></div>
-      </div>
-
-      <div style="margin-top:1rem" class="small">Projets disponibles : <strong id="count">0</strong></div>
-    </section>
-
-    <section class="projects-grid" id="projectsGrid" aria-live="polite"></section>
-  </main>
-
-  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="panel" role="document">
-      <div class="head">
-        <div>
-          <strong id="mTitle">Titre</strong>
-          <div id="mMeta" class="small"></div>
-        </div>
-        <div>
-          <button onclick="closeModal()" aria-label="Fermer" style="border:none;background:transparent;font-size:1.2rem;cursor:pointer">✕</button>
-        </div>
-      </div>
-      <div class="body" id="mBody"></div>
+<header>
+  <div class="wrap top">
+    <div class="logo">🔨 <span>GuideRénov</span></div>
+    <div class="tabs" role="tablist" aria-label="Navigation principale">
+      <button class="tab-btn active" data-tab="home" onclick="switchTab('home')">Accueil</button>
+      <button class="tab-btn" data-tab="projects" onclick="switchTab('projects')">Projets</button>
+      <button class="tab-btn" data-tab="assistant" onclick="switchTab('assistant')">Assistant IA</button>
+      <button class="tab-btn" data-tab="profile" onclick="switchTab('profile')">Profil</button>
     </div>
   </div>
+</header>
 
-  <footer class="wrap"><small>Prototype — GuideRénov. Données exemples. Hébergement et publication à prévoir.</small></footer>
+<main class="wrap">
+  <!-- HOME -->
+  <section id="home" class="tab-content">
+    <div class="hero panel">
+      <h1>GuideRénov — Ton assistant travaux pas-à-pas</h1>
+      <p>
+        GuideRénov transforme une idée de bricolage en plan d'action concret. Tu sélectionnes un projet ou tu prends une photo et saisis les cotes.
+        L'outil calcule les quantités nécessaires, fournit une estimation de coût et une notice détaillée étape par étape — matériel, outils, préparation, exécution et finitions.
+        Commence par l'onglet <strong>Projets</strong> pour explorer les 73 fiches. Utilise <strong>Assistant IA</strong> pour obtenir des conseils rapides ou pour clarifier une étape. Ton profil conserve tes projets.
+      </p>
+      <div style="margin-top:12px" class="small">
+        Mode d'emploi rapide :
+        <ol style="margin-top:8px;padding-left:18px">
+          <li><strong>Choisissez un projet</strong> dans Projets ou créez un projet personnalisé.</li>
+          <li><strong>Chargez une photo (optionnel)</strong> et saisissez les cotes (hauteur, largeur, profondeur en cm).</li>
+          <li>Cliquez sur <em>Calculer</em> pour obtenir : liste matériaux, estimation (prix), outillage recommandé et la notice pas-à-pas.</li>
+          <li>Réservez un kit ou notez les références pour achat. Sauvegardez dans Profil.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
 
-  <script>
-    // --- Données : 73 projets (listes + catégories) ---
-    const rawTitles = [
-      // Menuiserie (10)
-      'Montage meuble IKEA (Billy, Kallax)','Montage placard encastré','Pose de parquet flottant','Pose de plinthes','Montage lit/armoire',
-      'Installation plan de travail cuisine','Fabrication étagères sur mesure','Pose de porte intérieure','Remplacement charnière porte','Montage dressing modulable',
-      // Peinture (8)
-      'Peinture mur/plafond','Application sous-couche','Peinture boiseries','Peinture radiateur','Pose de toile de verre','Rebouchage et ponçage avant peinture','Peinture façade extérieure','Vernis meuble bois',
-      // Électricité (7)
-      'Installation prise murale','Pose plafonnier','Remplacement interrupteur','Installation détecteur de mouvement','Installation applique murale','Pose variateur d\'intensité','Tirage simple de câble',
-      // Plomberie (8)
-      'Installation lavabo/vasque','Montage robinet/mitigeur','Installation machine à laver','Pose colonne de douche','Remplacement siphon','Pose évacuation lave-vaisselle','Installation ballon d\'eau petit modèle','Changement flexible douche',
-      // Chauffage (6)
-      'Pose radiateur électrique mural','Installation thermostat connecté','Remplacement radiateur','Pose sèche-serviette','Installation grille aération','Montage chaudière (guide pro)',
-      // Sécurité & Serrurerie (6)
-      'Remplacement barillet porte','Pose serrure additionnelle','Installation détecteur fumée','Pose judas porte','Installation sonnette connectée','Pose verrou sécurité fenêtre',
-      // Maçonnerie (6)
-      'Scellement cheville chimique','Rebouchage trou & fissure','Pose carrelage mural petit format','Jointoiement carrelage','Création coffrage léger','Réparation plâtre',
-      // Aménagement (8)
-      'Pose tringle à rideaux','Installation miroir mural','Montage meuble TV','Montage bureau','Installation étagères murales','Pose store enrouleur','Installation porte coulissante','Montage mezzanine légère',
-      // Extérieur (6)
-      'Montage abri jardin','Pose clôture simple','Installation luminaire extérieur','Pose gouttière PVC','Installation récupérateur d\'eau','Aménagement bac à fleurs',
-      // Entretien & Divers (10)
-      'Remplacement joint silicone salle de bain','Entretien robinetterie','Changement poignée fenêtre','Pose joint anti-courant d\'air','Débouchage simple évier','Pose boîte aux lettres','Installation détecteur monoxyde de carbone','Petite soudure métal','Réparation carrosserie abîmée','Mise à niveau sol léger'
+  <!-- PROJECTS -->
+  <section id="projects" class="tab-content" style="display:none">
+    <div class="panel">
+      <div class="row" style="align-items:center">
+        <div class="col" style="max-width:420px">
+          <input type="text" id="searchInput" placeholder="Rechercher un projet (ex: peinture mur, radiateur...)" oninput="renderProjects()">
+        </div>
+        <div style="min-width:160px">
+          <select id="categoryFilter" onchange="renderProjects()">
+            <option value="Toutes catégories">Toutes catégories</option>
+          </select>
+        </div>
+        <div style="min-width:140px">
+          <button class="btn btn-primary" onclick="openNewProject()">Nouveau projet</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="small">Projets disponibles : <strong id="projectCount">0</strong></div>
+
+      <div id="projectsGrid" class="grid projects-grid" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ASSISTANT IA -->
+  <section id="assistant" class="tab-content" style="display:none">
+    <div class="panel">
+      <h3>Assistant IA (prototype)</h3>
+      <p class="small">Pose une question technique. Ce prototype donne des réponses basées sur des règles locales. Pour conseils avancés, connecte une API IA plus tard.</p>
+      <div style="margin-top:12px" class="row">
+        <div class="col">
+          <textarea id="assistantInput" rows="4" placeholder="Ex: Combien de litres pour peindre un mur de 3m x 2.5m ?" ></textarea>
+        </div>
+        <div style="min-width:140px">
+          <button class="btn btn-primary" onclick="handleAssistant()">Demander</button>
+        </div>
+      </div>
+      <div id="assistantReply" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="profile" class="tab-content" style="display:none">
+    <div class="panel">
+      <h3>Profil</h3>
+      <div class="row">
+        <div class="col">
+          <label>Nom</label>
+          <input type="text" id="profileName" placeholder="Ton nom">
+        </div>
+        <div style="min-width:160px">
+          <label>Email (optionnel)</label>
+          <input type="text" id="profileEmail" placeholder="adresse@exemple.com">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" onclick="saveProfile()">Enregistrer</button>
+        <button class="btn btn-outline" onclick="loadProfile()">Charger</button>
+      </div>
+
+      <div style="margin-top:18px">
+        <h4>Projets sauvegardés</h4>
+        <div id="savedProjectsList" class="small"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Project modal -->
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <div><strong id="modalTitle">Titre</strong><div id="modalMeta" class="small"></div></div>
+      <div><button class="btn" onclick="closeModal()">✕</button></div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<footer class="wrap">
+  <small>Prototype GuideRénov — version statique. Données locales. ©</small>
+</footer>
+
+<script>
+/* ---------------------------
+   Data: projets + templates
+   --------------------------- */
+const rawTitles = [
+  /* Menuiserie (10) */
+  'Montage meuble IKEA (Billy, Kallax)','Montage placard encastré','Pose de parquet flottant','Pose de plinthes','Montage lit/armoire','Installation plan de travail cuisine','Fabrication étagères sur mesure','Pose de porte intérieure','Remplacement charnière porte','Montage dressing modulable',
+  /* Peinture (8) */
+  'Peinture mur/plafond','Application sous-couche','Peinture boiseries','Peinture radiateur','Pose de toile de verre','Rebouchage et ponçage avant peinture','Peinture façade extérieure','Vernis meuble bois',
+  /* Électricité (7) */
+  'Installation prise murale','Pose plafonnier','Remplacement interrupteur','Installation détecteur de mouvement','Installation applique murale','Pose variateur d\'intensité','Tirage simple de câble',
+  /* Plomberie (8) */
+  'Installation lavabo/vasque','Montage robinet/mitigeur','Installation machine à laver','Pose colonne de douche','Remplacement siphon','Pose évacuation lave-vaisselle','Installation ballon d\'eau petit modèle','Changement flexible douche',
+  /* Chauffage (6) */
+  'Pose radiateur électrique mural','Installation thermostat connecté','Remplacement radiateur','Pose sèche-serviette','Installation grille aération','Montage chaudière (guide pro)',
+  /* Sécurité & Serrurerie (6) */
+  'Remplacement barillet porte','Pose serrure additionnelle','Installation détecteur fumée','Pose judas porte','Installation sonnette connectée','Pose verrou sécurité fenêtre',
+  /* Maçonnerie (6) */
+  'Scellement cheville chimique','Rebouchage trou & fissure','Pose carrelage mural petit format','Jointoiement carrelage','Création coffrage léger','Réparation plâtre',
+  /* Aménagement (8) */
+  'Pose tringle à rideaux','Installation miroir mural','Montage meuble TV','Montage bureau','Installation étagères murales','Pose store enrouleur','Installation porte coulissante','Montage mezzanine légère',
+  /* Extérieur (6) */
+  'Montage abri jardin','Pose clôture simple','Installation luminaire extérieur','Pose gouttière PVC','Installation récupérateur d\'eau','Aménagement bac à fleurs',
+  /* Entretien & Divers (10) */
+  'Remplacement joint silicone salle de bain','Entretien robinetterie','Changement poignée fenêtre','Pose joint anti-courant d\'air','Débouchage simple évier','Pose boîte aux lettres','Installation détecteur monoxyde de carbone','Petite soudure métal','Réparation carrosserie abîmée','Mise à niveau sol léger'
+];
+
+const categoryMap = {
+  'Menuiserie': rawTitles.slice(0,10),
+  'Peinture': rawTitles.slice(10,18),
+  'Électricité': rawTitles.slice(18,25),
+  'Plomberie': rawTitles.slice(25,33),
+  'Chauffage': rawTitles.slice(33,39),
+  'Sécurité': rawTitles.slice(39,45),
+  'Maçonnerie': rawTitles.slice(45,51),
+  'Aménagement': rawTitles.slice(51,59),
+  'Extérieur': rawTitles.slice(59,65),
+  'Entretien': rawTitles.slice(65,75)
+};
+
+// helper to build detailed steps per category
+function buildDetailsFor(title, category){
+  const lower = title.toLowerCase();
+  // base structure
+  const base = {
+    title,
+    category,
+    difficulty: chooseDifficulty(title),
+    time: estimateTime(category),
+    materials: [],
+    tools: [],
+    steps: [],
+    tips: []
+  };
+
+  // generic tools + materials
+  base.tools = ['Mètre', 'Niveau', 'Crayon', 'Perceuse-visseuse', 'Tournevis'];
+  base.materials = [{name:'Kit de fixation (vis, chevilles)', qty:'1', price:'variable'}];
+
+  // Category-specific enrichment
+  if(category === 'Peinture'){
+    base.materials.unshift({name:'Peinture (L)', qty:'calculée selon surface', price:'€/L'});
+    base.tools = ['Rouleau à poils adaptés','Pinceau finition','Bac à peinture','Bâches de protection','Ruban de masquage', ...base.tools];
+    base.steps = [
+      {title:'Évaluation & préparation', desc:'Mesurer la surface. Vérifier état du mur (fissures, ancien revêtement). Protéger sols et mobiliers avec bâches.'},
+      {title:'Rebouchage et ponçage', desc:'Comblez fissures et trous avec enduit. Laisser sécher. Poncer pour lisser la surface.'},
+      {title:'Nettoyage et sous-couche', desc:'Dépoussiérer et laver si nécessaire. Appliquer sous-couche si mur absorbant ou changement de couleur prononcé.'},
+      {title:'Préparation peinture', desc:'Remuer la peinture. Verser dans bac. Installer grille d’essorage pour le rouleau.'},
+      {title:'Peinture — technique', desc:'Peindre d’abord les angles au pinceau, puis utiliser le rouleau en bandes verticales, chevauchant 10 cm, en doublant les passes si nécessaire pour une finition uniforme.'},
+      {title:'Séchage et finition', desc:'Attendre le temps indiqué entre couches. Retirer ruban et bâches. Vérifier uniformité et retouches.'}
     ];
+    base.tips = [
+      'Calcule 1L pour ~10 m² en 1 couche selon opacité. Prévois 10–15% de perte.',
+      'Appliquer la peinture du plafond vers le sol pour éviter coulures.',
+      'Utilise rouleau à poils courts pour murs lisses, poils longs pour murs texturés.'
+    ];
+  } else if(category === 'Menuiserie'){
+    base.materials.unshift({name:'Panneaux / éléments kit', qty:'1', price:'€ dépendant du kit'});
+    base.tools = ['Scie sauteuse / circulaire','Serre-joints','Cale de frappe', ...base.tools];
+    base.steps = [
+      {title:'Vérification des dimensions', desc:'Mesurer l’ouverture et reporter les cotes. Vérifier planéité du sol et mur.'},
+      {title:'Préparation des éléments', desc:'Déballer kit, trier pièces et quincaillerie. Lire la notice fabricant.'},
+      {title:'Assemblage à plat', desc:'Pré-assembler les grands éléments au sol pour vérifier l’ajustement avant fixation.'},
+      {title:'Fixation et mise en place', desc:'Relever la structure, fixer aux ancrages muraux adaptés (chevilles, vis) en respectant niveau et aplomb.'},
+      {title:'Ajustements et finitions', desc:'Poser portes/tiroirs, ajuster charnières, refermer et vérifier fonctionnement.'}
+    ];
+    base.tips = ['Toujours pré-percer pour éviter fendre le bois.', 'Utiliser serre-joints pour maintenir pièces pendant vissage.'];
+  } else if(category === 'Plomberie'){
+    base.materials.unshift({name:'Robinet/mitigeur', qty:'1', price:'€'});
+    base.tools = ['Clé à molette','Clé plate','Tournevis','Ruban PTFE', ...base.tools];
+    base.steps = [
+      {title:'Coupure eau', desc:'Fermer l’arrivée d’eau générale et vidanger le circuit.'},
+      {title:'Remplacement/pose', desc:'Déposer l’ancien élément si présent. Installer joints neufs et serrer selon préconisation.'},
+      {title:'Test étanchéité', desc:'Rétablir alimentation et vérifier absence de fuite sur raccords.'}
+    ];
+    base.tips = ['Prévoir joints de rechange.', 'Si doute sur raccordement, faire intervenir un professionnel pour installations gazeuses ou chaudières.'];
+  } else if(category === 'Électricité'){
+    base.materials.unshift({name:'Interrupteur / prise', qty:'1', price:'€'});
+    base.tools = ['Tournevis isolé','Pince coupante','Testeur de tension', ...base.tools];
+    base.steps = [
+      {title:'Sécuriser', desc:'Couper le disjoncteur correspondant au circuit. Vérifier l’absence de tension.'},
+      {title:'Remplacement/pose', desc:'Brancher correctement la terre, neutre et phase en respectant code couleur.'},
+      {title:'Vérification', desc:'Rétablir le courant et tester la fonction. Contrôler aux bornes.'}
+    ];
+    base.tips = ['Ne jamais travailler sous tension.', 'Respecter les normes et faire valider par un électricien pour circuits encastrés.'];
+  } else if(category === 'Chauffage'){
+    base.materials.unshift({name:'Radiateur / élément chauffage', qty:'1', price:'€'});
+    base.tools = ['Clé à molette','Clé à radiateur','Niveau', ...base.tools];
+    base.steps = [
+      {title:'Couper alimentation', desc:'Couper l’alimentation électrique ou fermer circuit de chauffe si lié au circuit hydraulique.'},
+      {title:'Fixation', desc:'Fixer équerres et poser appareil selon préconisations, purger et tester.'}
+    ];
+    base.tips = ['Vérifier compatibilité puissance et raccordement.', 'Si changement chaudière, interventions pro requises.'];
+  } else if(category === 'Maçonnerie'){
+    base.materials.unshift({name:'Mortier / enduit', qty:'quantité selon surface', price:'€'});
+    base.tools = ['Truelle','Spatule','Niveau','Gants', ...base.tools];
+    base.steps = [
+      {title:'Préparation surface', desc:'Nettoyer, humidifier si nécessaire.'},
+      {title:'Application', desc:'Appliquer couche de base, lisser, laisser prendre, finition.'}
+    ];
+    base.tips = ['Respecter temps de séchage.', 'Porter protections (lunettes, gants).'];
+  } else if(category === 'Aménagement' || category === 'Extérieur' || category === 'Entretien' || category === 'Sécurité'){
+    base.steps = [
+      {title:'Préparer', desc:'Mesurer et définir emplacement exact.'},
+      {title:'Fixer / installer', desc:'Utiliser chevilles adaptées et ancrages.'},
+      {title:'Ajuster', desc:'Vérifier alignement et finition.'}
+    ];
+    base.tips = ['Utiliser protections adaptées.', 'S’assurer de la conformité des fixations au type de mur.'];
+  }
 
-    const categoryMap = {
-      'Menuiserie': ['Montage meuble IKEA (Billy, Kallax)','Montage placard encastré','Pose de parquet flottant','Pose de plinthes','Montage lit/armoire','Installation plan de travail cuisine','Fabrication étagères sur mesure','Pose de porte intérieure','Remplacement charnière porte','Montage dressing modulable'],
-      'Peinture': ['Peinture mur/plafond','Application sous-couche','Peinture boiseries','Peinture radiateur','Pose de toile de verre','Rebouchage et ponçage avant peinture','Peinture façade extérieure','Vernis meuble bois'],
-      'Électricité': ['Installation prise murale','Pose plafonnier','Remplacement interrupteur','Installation détecteur de mouvement','Installation applique murale','Pose variateur d\'intensité','Tirage simple de câble'],
-      'Plomberie': ['Installation lavabo/vasque','Montage robinet/mitigeur','Installation machine à laver','Pose colonne de douche','Remplacement siphon','Pose évacuation lave-vaisselle','Installation ballon d\'eau petit modèle','Changement flexible douche'],
-      'Chauffage': ['Pose radiateur électrique mural','Installation thermostat connecté','Remplacement radiateur','Pose sèche-serviette','Installation grille aération','Montage chaudière (guide pro)'],
-      'Sécurité': ['Remplacement barillet porte','Pose serrure additionnelle','Installation détecteur fumée','Pose judas porte','Installation sonnette connectée','Pose verrou sécurité fenêtre'],
-      'Maçonnerie': ['Scellement cheville chimique','Rebouchage trou & fissure','Pose carrelage mural petit format','Jointoiement carrelage','Création coffrage léger','Réparation plâtre'],
-      'Aménagement': ['Pose tringle à rideaux','Installation miroir mural','Montage meuble TV','Montage bureau','Installation étagères murales','Pose store enrouleur','Installation porte coulissante','Montage mezzanine légère'],
-      'Extérieur': ['Montage abri jardin','Pose clôture simple','Installation luminaire extérieur','Pose gouttière PVC','Installation récupérateur d\'eau','Aménagement bac à fleurs'],
-      'Entretien': ['Remplacement joint silicone salle de bain','Entretien robinetterie','Changement poignée fenêtre','Pose joint anti-courant d\'air','Débouchage simple évier','Pose boîte aux lettres','Installation détecteur monoxyde de carbone','Petite soudure métal','Réparation carrosserie abîmée','Mise à niveau sol léger']
-    };
+  // add example safety warnings
+  base.safety = [
+    'Port des EPI recommandé (gants, lunettes, masque selon chantier).',
+    'Couper alimentation (eau/électricité) avant toute intervention lorsque nécessaire.',
+    'Consulter notice fabricant pour appareils fournis.'
+  ];
 
-    // Build projects array with structure and simple rules
-    const projects = rawTitles.map((t,i)=>{
-      let cat = 'Autre';
-      for(const k of Object.keys(categoryMap)) if(categoryMap[k].includes(t)){cat=k;break}
-      const diff = i%3===0? 'Facile' : (i%3===1? 'Moyen':'Difficile');
-      const materials = [{name: "Kit de base (vis, chevilles, colle)", quantity: "1", price: "variable"}];
-      const tools = ['Mètre','Niveau','Perceuse-visseuse'];
-      const steps = [
-        {title:'Prise de mesures', desc:'Mesurez précisément la zone concernée.'},
-        {title:'Préparation', desc:'Dégagez la zone et protégez les surfaces sensibles.'},
-        {title:'Exécution', desc:'Suivez les étapes spécifiques au projet.'},
-        {title:'Finitions', desc:'Nettoyez et vérifiez la qualité du travail.'}
-      ];
+  return base;
+}
 
-      const lower = t.toLowerCase();
-      if(lower.includes('peinture')){
-        materials.unshift({name:'Peinture (estimation L)', quantity:'variable', price:'€/L'});
-        tools.unshift('Rouleau','Pinceau','Bac à peinture');
-        steps.unshift({title:'Protection', desc:'Protégez sols et meubles, masquez plinthes et prises.'});
-      }
-      if(lower.includes('parquet')){
-        materials.unshift({name:'Lames parquet (m²)', quantity:'surface +10%', price:'€/m²'});
-        tools.unshift('Scie','Cale de frappe');
-      }
-      if(lower.includes('plinthe')){
-        materials.unshift({name:'Plinthes (ml)', quantity:'périmètre', price:'€/ml'});
-      }
-      if(lower.includes('radiateur')|| lower.includes('chauffage')){
-        materials.unshift({name:'Radiateur (réf à vérifier)', quantity:'1', price:'€'});
-        tools.unshift('Clé à molette');
-      }
+function chooseDifficulty(title){
+  const t = title.toLowerCase();
+  if(t.includes('montage')|| t.includes('pose') || t.includes('remplacement')) return 'Moyen';
+  if(t.includes('installation')|| t.includes('montage abri')) return 'Difficile';
+  return 'Facile';
+}
+function estimateTime(category){
+  if(category==='Peinture') return '2-8 heures selon surface';
+  if(category==='Menuiserie') return '2-10 heures selon complexité';
+  if(category==='Plomberie') return '1-6 heures selon intervention';
+  return '1-8 heures';
+}
 
-      // calcFormula: basic templates for paint/parquet/plinthes
-      const calcFormula = (dimensions)=>{
-        const h = Number(dimensions.height)||0;
-        const w = Number(dimensions.width)||0;
-        const d = Number(dimensions.depth)||0;
-        const area = Math.round(((h/100)*(w/100))*100)/100; // m²
-        const result = {items:[], estimateEuro:null, notes:null};
-        if(lower.includes('peinture')){
-          const sqm = area>0? area : 10;
-          const liters = Math.max(1, Math.ceil((sqm / 10) * 1)); // hypothèse 10 m2 / L
-          const price = liters * 15;
-          result.items.push({name:'Peinture (L)', qty:liters, unit:'L'});
-          result.estimateEuro = price + ' € (est.)';
-          result.notes = `Surface estimée ${sqm} m². Prévoir sous-couche si nécessaire.`;
-        } else if(lower.includes('parquet')){
-          const sqm = area>0? area : 10;
-          const qty = Math.ceil(sqm * 1.1);
-          result.items.push({name:'Lames parquet (m²)', qty, unit:'m²'});
-          result.estimateEuro = Math.round(qty * 25) + ' € (est.)';
-        } else if(lower.includes('plinth')){
-          const perim = h>0 && w>0? 2 * ((h/100) + (w/100)) : 10;
-          const ml = Math.ceil(perim);
-          result.items.push({name:'Plinthes (ml)', qty:ml, unit:'ml'});
-          result.estimateEuro = Math.round(ml * 8) + ' € (est.)';
-        } else {
-          result.items.push({name:'Kit outils de base', qty:1, unit:'kit'});
-          result.estimateEuro = 'variable';
-        }
-        return result;
-      };
+/* Build full projects array with detailed descriptions */
+const projects = rawTitles.map((t,i)=>{
+  // find category
+  let cat = 'Autre';
+  for(const k of Object.keys(categoryMap)) if(categoryMap[k].includes(t)){cat=k;break}
+  return buildDetailsFor(t, cat);
+});
 
-      return {id:i+1,title:t,category:cat,difficulty:diff,time:'variable',description:'Fiche pas-à-pas pour '+t,materials,tools,steps,calcFormula};
+/* ---------------------------
+   UI: populate categories and render projects
+   --------------------------- */
+const catSelect = document.getElementById('categoryFilter');
+const categories = ['Toutes catégories', ...Object.keys(categoryMap)];
+categories.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.textContent=c; catSelect.appendChild(opt); });
+
+function renderProjects(){
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const cf = (document.getElementById('categoryFilter')?.value || 'Toutes catégories');
+  const grid = document.getElementById('projectsGrid'); grid.innerHTML='';
+  const filtered = projects.filter(p=>{
+    if(cf!=='Toutes catégories' && p.category!==cf) return false;
+    if(q && !(p.title.toLowerCase().includes(q) || p.materials.some(m=>m.name.toLowerCase().includes(q)) || p.steps.some(s=>s.title.toLowerCase().includes(q)))) return false;
+    return true;
+  });
+  document.getElementById('projectCount').textContent = filtered.length;
+  filtered.forEach((p, idx)=>{
+    const card = document.createElement('article'); card.className='card'; card.tabIndex=0;
+    card.innerHTML = `<div style="font-weight:700">${escapeHtml(p.title)}</div>
+      <div class="small">${escapeHtml(p.category)} • ${escapeHtml(p.difficulty)} • ${escapeHtml(p.time)}</div>
+      <div style="margin-top:8px" class="small">${escapeHtml(shortDescription(p))}</div>
+      <div style="margin-top:10px"><span class="badge">${escapeHtml(p.category)}</span></div>`;
+    card.addEventListener('click', ()=> openProjectModal(p));
+    card.addEventListener('keypress', e=> { if(e.key==='Enter') openProjectModal(p) });
+    grid.appendChild(card);
+  });
+}
+function shortDescription(p){
+  // create 120 char summary from first steps
+  const s = p.steps.map(x=>x.desc).join(' ');
+  return (s.length>120)? s.slice(0,117)+'...' : s;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------------------
+   Modal: project detail + calculator
+   --------------------------- */
+function openProjectModal(p){
+  const modal = document.getElementById('modal'); modal.classList.add('active'); modal.setAttribute('aria-hidden','false');
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('modalMeta').textContent = `${p.category} • ${p.difficulty} • ${p.time}`;
+  const body = document.getElementById('modalBody'); body.innerHTML = '';
+
+  // left column: uploader + dimensions + calc
+  const uploader = document.createElement('div'); uploader.className='section';
+  uploader.innerHTML = `<div class="uploader">📷 Charger photo (optionnel)<br><input type="file" id="projPhoto" accept="image/*" style="margin-top:8px"></div>
+    <div style="margin-top:8px" class="row">
+      <div style="flex:1"><label>Hauteur (cm)</label><input id="h" type="number" min="0" placeholder="ex: 250"></div>
+      <div style="width:12px"></div>
+      <div style="flex:1"><label>Largeur (cm)</label><input id="w" type="number" min="0" placeholder="ex: 400"></div>
+      <div style="width:12px"></div>
+      <div style="flex:1"><label>Profondeur (cm)</label><input id="d" type="number" min="0" placeholder="ex: 30"></div>
+    </div>
+    <div style="margin-top:8px"><button class="btn btn-primary" id="calcBtn">Calculer la liste et le prix</button>
+    <button class="btn btn-outline" id="saveBtn" style="margin-left:8px">Sauvegarder projet</button></div>
+    <div class="photo-row" id="photoPreview"></div>`;
+  body.appendChild(uploader);
+
+  // attach photo preview handler
+  const photoInput = uploader.querySelector('#projPhoto');
+  const photoPreview = uploader.querySelector('#photoPreview');
+  photoInput.addEventListener('change', ev=> {
+    photoPreview.innerHTML=''; Array.from(ev.target.files).forEach(f=>{
+      const url = URL.createObjectURL(f);
+      const img = document.createElement('img'); img.src = url; img.alt = 'photo projet'; photoPreview.appendChild(img);
     });
+  });
 
-    // --- UI init: categories filter populate ---
-    const categories = ['Toutes catégories', ...Object.keys(categoryMap)];
-    const catSelect = document.getElementById('categoryFilter');
-    categories.forEach(c=>{
-      const opt=document.createElement('option'); opt.value=c; opt.textContent=c; catSelect.appendChild(opt);
-    });
+  // results area
+  const results = document.createElement('div'); results.className='section'; results.id='projResults';
+  body.appendChild(results);
 
-    // render projects grid
-    function renderProjects(){
-      const q = document.getElementById('search').value.toLowerCase().trim();
-      const cf = document.getElementById('categoryFilter').value;
-      const grid = document.getElementById('projectsGrid'); grid.innerHTML='';
-      const filtered = projects.filter(p=>{
-        if(cf !== 'Toutes catégories' && p.category !== cf) return false;
-        if(q && !(p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))) return false;
-        return true;
-      });
-      document.getElementById('count').textContent = filtered.length;
-      filtered.forEach(p=>{
-        const el = document.createElement('article'); el.className='card'; el.tabIndex=0;
-        el.innerHTML = `
-          <div style="font-weight:700">${escapeHtml(p.title)}</div>
-          <div class="meta">${escapeHtml(p.category)} • ${escapeHtml(p.difficulty)}</div>
-          <div style="margin-top:.6rem;color:var(--muted);font-size:.95rem">${escapeHtml(p.description)}</div>
-          <div style="margin-top:.8rem"><span class="badge">${escapeHtml(p.category)}</span></div>
-        `;
-        el.addEventListener('click', ()=> openProject(p));
-        el.addEventListener('keypress', (e)=>{ if(e.key==='Enter') openProject(p) });
-        grid.appendChild(el);
-      });
+  // materials, tools, steps displayed below
+  const toolsSection = document.createElement('div'); toolsSection.className='section';
+  toolsSection.innerHTML = `<strong>Outillage recommandé</strong><div class="small" style="margin-top:6px">${p.tools.join(', ')}</div>`;
+  body.appendChild(toolsSection);
+
+  const materialsSection = document.createElement('div'); materialsSection.className='section';
+  materialsSection.innerHTML = `<strong>Matériaux</strong><div id="matList" style="margin-top:8px"></div>`;
+  body.appendChild(materialsSection);
+
+  const stepsSection = document.createElement('div'); stepsSection.className='section';
+  stepsSection.innerHTML = `<strong>Notice détaillée (étapes)</strong><div id="stepsList" style="margin-top:8px"></div>`;
+  body.appendChild(stepsSection);
+
+  const tipsSection = document.createElement('div'); tipsSection.className='section';
+  tipsSection.innerHTML = `<strong>Conseils & sécurité</strong><div id="tipsList" class="small" style="margin-top:8px"></div>`;
+  body.appendChild(tipsSection);
+
+  // fill materials, steps, tips
+  const matList = document.getElementById('matList');
+  matList.innerHTML = '';
+  p.materials.forEach(m => {
+    const r = document.createElement('div'); r.className='list-row';
+    r.innerHTML = `<div>${escapeHtml(m.name)}</div><div class="small">${escapeHtml(m.qty)} ${m.price? '• '+escapeHtml(m.price) : ''}</div>`;
+    matList.appendChild(r);
+  });
+
+  const stepsList = document.getElementById('stepsList');
+  stepsList.innerHTML = '';
+  p.steps.forEach((s, idx)=> {
+    const el = document.createElement('div'); el.className='step';
+    el.innerHTML = `<div style="font-weight:700">Étape ${idx+1} — ${escapeHtml(s.title)}</div><div class="small" style="margin-top:6px">${escapeHtml(s.desc)}</div>`;
+    stepsList.appendChild(el);
+  });
+
+  const tipsList = document.getElementById('tipsList');
+  tipsList.innerHTML = '';
+  p.tips.forEach(t => { const d = document.createElement('div'); d.textContent = t; tipsList.appendChild(d); });
+  p.safety.forEach(s => { const d = document.createElement('div'); d.textContent = s; tipsList.appendChild(d); });
+
+  // attach calc button
+  uploader.querySelector('#calcBtn').onclick = ()=> {
+    const h = Number(uploader.querySelector('#h').value || 0);
+    const w = Number(uploader.querySelector('#w').value || 0);
+    const d = Number(uploader.querySelector('#d').value || 0);
+    const calc = runCalc(p, {height:h,width:w,depth:d});
+    renderCalc(calc, results);
+  };
+
+  // attach save button (stores in localStorage under savedProjects)
+  uploader.querySelector('#saveBtn').onclick = ()=>{
+    const name = p.title;
+    const h = Number(uploader.querySelector('#h').value || 0);
+    const w = Number(uploader.querySelector('#w').value || 0);
+    const d = Number(uploader.querySelector('#d').value || 0);
+    const saved = JSON.parse(localStorage.getItem('savedProjects')||'[]');
+    saved.push({id: Date.now(), title: name, category: p.category, dims:{h,w,d}, date:new Date().toISOString()});
+    localStorage.setItem('savedProjects', JSON.stringify(saved));
+    alert('Projet sauvegardé dans ton profil.');
+    renderSavedProjects();
+  };
+}
+
+function runCalc(p, dims){
+  // returns items list + estimate + notes
+  const h = Number(dims.height)||0; const w = Number(dims.width)||0; const d = Number(dims.depth)||0;
+  const area = (h && w)? ((h/100)*(w/100)) : 0; // m2
+  const result = {items:[], estimate:'variable', notes:null};
+  if(p.category === 'Peinture'){
+    const sqm = area>0? Math.round(area*100)/100 : 10;
+    const liters = Math.max(1, Math.ceil((sqm / 10) * 1)); // 1L per 10m2 base
+    const price = liters * 15;
+    result.items.push({name:'Peinture (L)', qty:liters, unit:'L'});
+    result.items.push({name:'Ruban de masquage', qty:1, unit:'lot'});
+    result.items.push({name:'Bâche de protection', qty:1, unit:'pièce'});
+    result.estimate = price + ' € (est.)';
+    result.notes = `Surface estimée ${sqm} m². Prévoir sous-couche si ancien mur absorbant.`;
+  } else if(p.category === 'Menuiserie'){
+    result.items.push({name:'Éléments kits / panneaux selon modèle', qty:1});
+    result.items.push({name:'Visserie', qty:'1 boîte'});
+    result.estimate = 'variable selon kit (est. 100–400 €)';
+  } else if(p.category === 'Plomberie'){
+    result.items.push({name:'Robinet / raccord', qty:1});
+    result.estimate = 'variable (est. 20–150 €)';
+  } else {
+    result.items.push({name:'Kit outils de base', qty:1});
+    result.estimate = 'variable';
+  }
+  return result;
+}
+
+function renderCalc(calc, out){
+  out.innerHTML = '';
+  const card = document.createElement('div'); card.className='panel';
+  const title = document.createElement('div'); title.innerHTML = `<strong>Résultat du calcul</strong><div class="small" style="margin-top:6px">${escapeHtml(calc.notes||'')}</div>`;
+  card.appendChild(title);
+  const list = document.createElement('div'); list.style.marginTop='8px';
+  calc.items.forEach(it=>{
+    const r = document.createElement('div'); r.className='list-row';
+    r.innerHTML = `<div>${escapeHtml(it.name)}</div><div class="small">${escapeHtml(String(it.qty||''))} ${escapeHtml(it.unit||'')}</div>`;
+    list.appendChild(r);
+  });
+  card.appendChild(list);
+  const price = document.createElement('div'); price.style.marginTop='10px'; price.innerHTML = `<strong>${escapeHtml(calc.estimate)}</strong>`;
+  card.appendChild(price);
+  out.appendChild(card);
+}
+
+/* ---------------------------
+   Assistant IA (prototype rule-based)
+   --------------------------- */
+function handleAssistant(){
+  const q = (document.getElementById('assistantInput').value||'').trim();
+  const out = document.getElementById('assistantReply'); out.innerHTML = '';
+  if(!q){ out.innerHTML = '<div class="small">Écris une question.</div>'; return; }
+  // simple rules
+  const lq = q.toLowerCase();
+  if(lq.includes('combien') && lq.includes('litre')){
+    // find numbers
+    const nums = q.match(/\\d+(?:[\\.,]\\d+)?/g) || [];
+    if(nums.length>=2){
+      const width = parseFloat(nums[0].replace(',', '.')); const height = parseFloat(nums[1].replace(',', '.'));
+      const area = (width/100)*(height/100); const liters = Math.max(1, Math.ceil(area/10));
+      out.innerHTML = `<div class="panel"><div><strong>Estimation :</strong> Surface ~ ${Math.round(area*100)/100} m² → ~ ${liters} L de peinture (1 couche).</div><div class="small" style="margin-top:6px">Hypothèse : 1L = 10 m². Ajuster selon peinture et nombre de couches.</div></div>`;
+      return;
     }
+    out.innerHTML = `<div class="panel"><div class="small">Donne largeur et hauteur en cm (ex: 300 x 250).</div></div>`;
+    return;
+  }
+  if(lq.includes('outillage') || lq.includes('quel outil') || lq.includes('quel rouleau')){
+    out.innerHTML = `<div class="panel"><div><strong>Suggestion outillage :</strong><ul style="margin-top:8px"><li>Peinture mur: rouleau 18mm (murs texturés) ou 10mm (lisse), pinceau 60mm pour angles, bac + grille.</li><li>Perçage: perceuse-visseuse sans fil 18V + mèches adaptées.</li></ul></div></div>`;
+    return;
+  }
+  // fallback
+  out.innerHTML = `<div class="panel"><div><strong>Réponse rapide :</strong> Je peux calculer quantités (peinture, parquet, plinthes) si tu me donnes les cotes. Donne largeur et hauteur en cm ou choisis un projet dans l'onglet Projets.</div></div>`;
+}
 
-    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+/* ---------------------------
+   Profile & saved projects (localStorage)
+   --------------------------- */
+function saveProfile(){
+  const name = document.getElementById('profileName').value || '';
+  const email = document.getElementById('profileEmail').value || '';
+  const obj = {name,email,updated:new Date().toISOString()};
+  localStorage.setItem('gr_profile', JSON.stringify(obj));
+  alert('Profil enregistré.');
+  renderSavedProjects();
+}
+function loadProfile(){
+  const p = JSON.parse(localStorage.getItem('gr_profile')||'null');
+  if(!p){ alert('Aucun profil trouvé.'); return; }
+  document.getElementById('profileName').value = p.name || '';
+  document.getElementById('profileEmail').value = p.email || '';
+  alert('Profil chargé.');
+  renderSavedProjects();
+}
+function renderSavedProjects(){
+  const container = document.getElementById('savedProjectsList');
+  const saved = JSON.parse(localStorage.getItem('savedProjects')||'[]');
+  if(saved.length===0){ container.innerHTML = '<div class="small">Aucun projet sauvegardé.</div>'; return; }
+  container.innerHTML = '';
+  saved.slice().reverse().forEach(s=>{
+    const el = document.createElement('div'); el.className='list-row';
+    el.innerHTML = `<div><strong>${escapeHtml(s.title)}</strong><div class="small">${escapeHtml(s.category)} • ${new Date(s.date).toLocaleString()}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><button class="btn btn-outline" onclick='loadSavedProject("${s.id}")'>Ouvrir</button><button class="btn" onclick='deleteSavedProject("${s.id}")' style="background:var(--danger);color:#fff;margin-top:6px">Supprimer</button></div>`;
+    container.appendChild(el);
+  });
+}
+function loadSavedProject(id){
+  const saved = JSON.parse(localStorage.getItem('savedProjects')||'[]');
+  const s = saved.find(x=>String(x.id)===String(id));
+  if(!s) return alert('Projet introuvable');
+  // find template by title
+  const template = projects.find(p=>p.title===s.title) || {title:s.title, category:s.category, difficulty:'—', time:'—', materials:[], tools:[], steps:[]};
+  openProjectModal(template);
+}
+function deleteSavedProject(id){
+  let saved = JSON.parse(localStorage.getItem('savedProjects')||'[]');
+  saved = saved.filter(x=>String(x.id)!==String(id));
+  localStorage.setItem('savedProjects', JSON.stringify(saved));
+  renderSavedProjects();
+}
 
-    // open project modal + interactive calculator
-    function openProject(p){
-      const m = document.getElementById('modal'); m.classList.add('active'); m.setAttribute('aria-hidden','false');
-      document.getElementById('mTitle').textContent = p.title;
-      document.getElementById('mMeta').textContent = `${p.category} • ${p.difficulty}`;
-      const body = document.getElementById('mBody'); body.innerHTML = '';
+/* ---------------------------
+   Tabs & init
+   --------------------------- */
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = (el.id===tab? '' : 'none'));
+  if(tab==='projects') renderProjects();
+  if(tab==='profile') renderSavedProjects();
+}
+function openNewProject(){ openProjectModal({title:'Projet personnalisé',category:'Personnalisé',difficulty:'À définir',time:'variable',materials:[{name:'Kit de base',qty:1}],tools:['Mètre','Niveau'],steps:[{title:'1. Définir',desc:'Choisir exactement le besoin'},{title:'2. Mesurer',desc:'Saisir cotes et photos'},{title:'3. Calculer',desc:'Utiliser le calculateur'}],tips:[],safety:[]}); }
+function closeModal(){ document.getElementById('modal').classList.remove('active'); document.getElementById('modal').setAttribute('aria-hidden','true'); }
 
-      // photo uploader
-      const up = document.createElement('div'); up.className='uploader';
-      up.innerHTML = `<div>📷 Charger une photo (optionnel)</div><input type="file" id="photoInput" accept="image/*" aria-label="Charger photo"><div class="photo-row" id="photoRow"></div>`;
-      body.appendChild(up);
-      up.querySelector('#photoInput').addEventListener('change', ev=>{
-        const row = up.querySelector('#photoRow'); row.innerHTML='';
-        Array.from(ev.target.files).forEach(f=>{ const url = URL.createObjectURL(f); const img = document.createElement('img'); img.src=url; img.alt = 'photo projet'; row.appendChild(img) });
-      });
+/* ---------------------------
+   Utilities & initial render
+   --------------------------- */
+function escapeHtml(s){ return String(s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
-      // dimensions form
-      const form = document.createElement('div'); form.style.marginTop='1rem';
-      form.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem">
-          <div><label>Hauteur (cm)</label><input type="number" id="dimH" placeholder="ex: 250" min="0"></div>
-          <div><label>Largeur (cm)</label><input type="number" id="dimW" placeholder="ex: 400" min="0"></div>
-          <div><label>Profondeur (cm)</label><input type="number" id="dimD" placeholder="ex: 30" min="0"></div>
-        </div>
-        <div style="margin-top:.6rem;display:flex;gap:.5rem;align-items:center">
-          <button class="btn btn-primary" id="calcBtn">Calculer besoins & prix</button>
-          <button class="btn btn-outline" id="resetBtn">Réinitialiser</button>
-        </div>
-      `;
-      body.appendChild(form);
+renderProjects();
+renderSavedProjects();
 
-      // results container
-      const out = document.createElement('div'); out.id='calcOut'; out.style.marginTop='1rem';
-      body.appendChild(out);
-
-      // tools and steps
-      const tools = document.createElement('div'); tools.style.marginTop='1rem';
-      tools.innerHTML = `<strong>Outillage recommandé</strong><div style="color:var(--muted);margin-top:.4rem">${p.tools.join(', ')}</div>`;
-      body.appendChild(tools);
-
-      const steps = document.createElement('div'); steps.className='steps'; steps.innerHTML = `<strong>Étapes</strong>`;
-      p.steps.forEach(s=>{
-        const el = document.createElement('div'); el.className='step';
-        el.innerHTML = `<div style="font-weight:700">${escapeHtml(s.title)}</div><div style="color:var(--muted);margin-top:.3rem">${escapeHtml(s.desc)}</div>`;
-        steps.appendChild(el);
-      });
-      body.appendChild(steps);
-
-      // attach behavior
-      form.querySelector('#calcBtn').onclick = ()=>{
-        const h = form.querySelector('#dimH').value; const w = form.querySelector('#dimW').value; const d = form.querySelector('#dimD').value;
-        const res = p.calcFormula({height:h,width:w,depth:d});
-        renderCalc(res, out);
-        // scroll to results
-        out.scrollIntoView({behavior:'smooth'});
-      };
-      form.querySelector('#resetBtn').onclick = ()=>{ form.querySelector('#dimH').value=''; form.querySelector('#dimW').value=''; form.querySelector('#dimD').value=''; out.innerHTML=''; };
-
-      // accessibility focus
-      setTimeout(()=>{ form.querySelector('#dimH').focus(); }, 100);
-    }
-
-    function renderCalc(res, out){
-      out.innerHTML = '';
-      const panel = document.createElement('div'); panel.style.padding='1rem'; panel.style.borderRadius='8px'; panel.style.background='linear-gradient(135deg,#f8fafc,#eef6ff)';
-      const title = document.createElement('div'); title.innerHTML = `<strong>Liste matériaux estimée</strong>`; panel.appendChild(title);
-      const list = document.createElement('div'); list.style.marginTop='.6rem';
-      (res.items||[]).forEach(it=>{
-        const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='.5rem 0';
-        row.innerHTML = `<div>${escapeHtml(it.name)}</div><div style="font-weight:700">${escapeHtml(String(it.qty))} ${escapeHtml(it.unit||'')}</div>`;
-        list.appendChild(row);
-      });
-      panel.appendChild(list);
-      if(res.estimateEuro){
-        const price = document.createElement('div'); price.style.marginTop='.8rem'; price.style.fontWeight='700'; price.style.color='var(--success)'; price.textContent = res.estimateEuro;
-        panel.appendChild(price);
-      }
-      if(res.notes){
-        const notes = document.createElement('div'); notes.style.marginTop='.6rem'; notes.style.color='var(--muted)'; notes.textContent = res.notes;
-        panel.appendChild(notes);
-      }
-      out.appendChild(panel);
-    }
-
-    function closeModal(){ document.getElementById('modal').classList.remove('active'); document.getElementById('modal').setAttribute('aria-hidden','true'); }
-    window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
-
-    function openNewProject(){ openProject({title:'Nouveau projet personnalisé',category:'Personnalisé',difficulty:'À déterminer',description:'Créez votre projet',materials:[],tools:[],steps:[{title:'Définir',desc:'Choisir type de travaux'},{title:'Mesurer',desc:'Mesurer la zone'},{title:'Calculer',desc:'Utiliser le calculateur'}], calcFormula: (dims)=>({items:[{name:'Kit outils de base',qty:1,unit:'kit'}],estimateEuro:'variable'})}) }
-
-    function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}) }
-
-    // initial render
-    renderProjects();
-
-    // expose some helpers for debug
-    window.renderProjects = renderProjects;
-    window.openProject = openProject;
-    window.closeModal = closeModal;
-    window.openNewProject = openNewProject;
-  </script>
+/* Expose minimal API for debug in console */
+window._gr = {projects, renderProjects, openProjectModal, runCalc, renderSavedProjects};
+</script>
 </body>
 </html>
