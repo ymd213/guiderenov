@@ -626,3 +626,253 @@ updateProfileSaved();
 </script>
 </body>
 </html>
+<!-- --- PHASE 2 À 4 : Interface complète + Assistant IA + Mes Projets + Profil --- -->
+<style>
+/* --- Layout général --- */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--bg);
+  color: #0b1220;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  width: 240px;
+  background: #111827;
+  color: #fff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .logo {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar li.active,
+.sidebar li:hover {
+  background: #1f2937;
+}
+
+/* --- Contenu principal --- */
+.content {
+  flex: 1;
+  padding: 25px;
+  overflow-y: auto;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+/* --- Chat IA --- */
+.chat-box {
+  border: 1px solid #ddd;
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+#chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+#chatMessages .message {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  max-width: 75%;
+}
+
+#chatMessages .message.ai {
+  background: #eef6ff;
+  align-self: flex-start;
+}
+
+#chatMessages .message.user {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  align-self: flex-end;
+}
+
+/* --- Projets --- */
+.project-card {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.hidden { display: none; }
+
+/* --- Mode sombre automatique --- */
+@media (prefers-color-scheme: dark) {
+  .app-layout { background: #0b1220; color: #f3f4f6; }
+  .content { color: #f3f4f6; }
+  .chat-box { background: #1f2937; border-color: #374151; color: #f3f4f6; }
+  .chat-box .message.user { background: #374151; border-color: #4b5563; }
+  .sidebar { background: #111827; }
+  .sidebar li.active, .sidebar li:hover { background: #374151; }
+}
+</style>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <h2 class="logo">GuideRénov</h2>
+    <nav>
+      <ul>
+        <li data-page="home" class="active">🏠 Accueil</li>
+        <li data-page="projects">📚 Projets</li>
+        <li data-page="ai">🤖 Assistant IA</li>
+        <li data-page="profile">👤 Profil</li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <!-- Accueil -->
+    <section id="home" class="page active">
+      <h1>Bienvenue sur GuideRénov</h1>
+      <p>Sélectionnez une section dans le menu latéral pour commencer.</p>
+    </section>
+
+    <!-- Projets -->
+    <section id="projects" class="page">
+      <h1>Projets disponibles</h1>
+      <div id="projectList"></div>
+    </section>
+
+    <!-- Assistant IA -->
+    <section id="ai" class="page">
+      <h1>Assistant IA</h1>
+      <div class="chat-box">
+        <div id="chatMessages"></div>
+        <input id="chatInput" type="text" placeholder="Écris ici..." />
+      </div>
+    </section>
+
+    <!-- Profil -->
+    <section id="profile" class="page">
+      <h1>Profil</h1>
+      <label>Nom : <input id="username" placeholder="Votre nom"></label><br>
+      <label>Email : <input id="email" placeholder="Votre email"></label><br>
+      <button id="saveProfile">Sauvegarder</button>
+      <p id="profileStatus"></p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* --- Navigation Sidebar --- */
+document.querySelectorAll('.sidebar li').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelector('.sidebar li.active')?.classList.remove('active');
+    item.classList.add('active');
+
+    const page = item.getAttribute('data-page');
+    document.querySelector('.page.active')?.classList.remove('active');
+    document.getElementById(page).classList.add('active');
+  });
+});
+
+/* --- Assistant IA --- */
+const chatBox = document.getElementById('chatMessages');
+function addMessage(text, sender='ai') {
+  const div = document.createElement('div');
+  div.classList.add('message', sender);
+  div.textContent = text;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+function initChat() {
+  const history = JSON.parse(localStorage.getItem('chatHistory')||'[]');
+  history.forEach(msg => addMessage(msg.text, msg.sender));
+  if(history.length === 0) addMessage("Bonjour ! Je suis ton assistant travaux. Pose-moi une question ou donne les dimensions d'un projet.");
+}
+document.getElementById('chatInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') {
+    const txt = e.target.value.trim();
+    if(!txt) return;
+    addMessage(txt,'user');
+    const history = JSON.parse(localStorage.getItem('chatHistory')||'[]');
+    history.push({text:txt,sender:'user'});
+    localStorage.setItem('chatHistory', JSON.stringify(history));
+
+    // réponse simulée
+    setTimeout(()=> {
+      const aiResponse = "Réponse IA simulée pour : " + txt;
+      addMessage(aiResponse,'ai');
+      const history = JSON.parse(localStorage.getItem('chatHistory')||'[]');
+      history.push({text:aiResponse,sender:'ai'});
+      localStorage.setItem('chatHistory', JSON.stringify(history));
+    }, 600);
+    e.target.value='';
+  }
+});
+initChat();
+
+/* --- Projets --- */
+const projectListEl = document.getElementById('projectList');
+const exampleProjects = [
+  {title:"Montage meuble IKEA", category:"Menuiserie"},
+  {title:"Peinture mur salon", category:"Peinture"},
+  {title:"Pose lavabo salle de bain", category:"Plomberie"}
+];
+function renderProjects() {
+  projectListEl.innerHTML='';
+  exampleProjects.forEach(p=>{
+    const div = document.createElement('div');
+    div.className='project-card';
+    div.textContent=`${p.title} [${p.category}]`;
+    div.onclick=()=> alert(`Guide détaillé : ${p.title}`);
+    projectListEl.appendChild(div);
+  });
+}
+renderProjects();
+
+/* --- Profil --- */
+const profileStatus = document.getElementById('profileStatus');
+function loadProfile() {
+  const data = JSON.parse(localStorage.getItem('profile')||'{}');
+  document.getElementById('username').value=data.name||'';
+  document.getElementById('email').value=data.email||'';
+  profileStatus.textContent=data.name ? "Connecté" : "Mode invité";
+}
+document.getElementById('saveProfile').addEventListener('click', ()=>{
+  const name=document.getElementById('username').value;
+  const email=document.getElementById('email').value;
+  localStorage.setItem('profile', JSON.stringify({name,email}));
+  profileStatus.textContent=name ? "Connecté" : "Mode invité";
+  alert('Profil enregistré !');
+});
+loadProfile();
+</script>
